@@ -7,6 +7,8 @@ import java.util.HashMap;
 
 public class Transpiler implements ZPESyntaxTranspiler {
 
+  int indentation = 0;
+
   HashMap<String, String> yassToPythonFunctionMapping = new HashMap<>();
 
   @Override
@@ -27,6 +29,17 @@ public class Transpiler implements ZPESyntaxTranspiler {
 
     return output.toString();
 
+  }
+
+  private String addIndentation(){
+    if(indentation > 0){
+      StringBuilder out = new StringBuilder();
+      for (int i = 0; i < indentation; i++){
+        out.append("  ");
+      }
+      return out.toString();
+    }
+    return "";
   }
 
   private String inner_transpile(IAST n){
@@ -61,6 +74,9 @@ public class Transpiler implements ZPESyntaxTranspiler {
       case YASSByteCodes.INT:
       case YASSByteCodes.DOUBLE:{
         return n.value.toString();
+      }
+      case YASSByteCodes.FOR_TO:{
+        return transpile_for(n);
       }
     }
     return "";
@@ -122,6 +138,22 @@ public class Transpiler implements ZPESyntaxTranspiler {
     return inner_transpile(n.left) + " / " + inner_transpile(n.next);
   }
 
+  private String transpile_for(IAST n){
+    StringBuilder output = new StringBuilder("for " + inner_transpile(n.middle.left.middle) + " in range(" + inner_transpile((IAST) n.middle.left.value) + ", " + inner_transpile((IAST) ((IAST) n.value).value) + "):");
+
+    indentation++;
+
+    IAST current = n.left;
+    while(current != null){
+      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+      current = current.next;
+    }
+
+    indentation--;
+
+
+    return output.toString();
+  }
   @Override
   public String LanguageName() {
     return "Python";

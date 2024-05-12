@@ -93,6 +93,12 @@ public class Transpiler implements ZPESyntaxTranspiler {
       case YASSByteCodes.STRING:{
         return "\"" + n.value.toString() + "\"";
       }
+      case YASSByteCodes.LIST:{
+        return "[" + generateParameters((IAST)n.value) + "]";
+      }
+      case YASSByteCodes.ASSOCIATION:{
+        return transpile_map(n);
+      }
       case YASSByteCodes.INT:
       case YASSByteCodes.DOUBLE:{
         return n.value.toString();
@@ -149,6 +155,31 @@ public class Transpiler implements ZPESyntaxTranspiler {
     return n.id;
   }
 
+  private String transpile_map(IAST n){
+
+    StringBuilder output = new StringBuilder();
+
+    output.append("{");
+
+    IAST current = (IAST) n.value;
+    while(current != null){
+      output.append(inner_transpile(current));
+      current = current.next;
+      output.append(" : ");
+      output.append(inner_transpile(current));
+      current = current.next;
+      if(current != null){
+        output.append(", ");
+      }
+    }
+
+    output.append("}");
+
+    return output.toString();
+
+
+  }
+
   private String transpile_function(IAST n){
     //Transpilation of a function
     StringBuilder output = new StringBuilder("def " + n.id + "(" + generateParameters((IAST)n.value) + ")" + ":" + System.lineSeparator());
@@ -164,6 +195,7 @@ public class Transpiler implements ZPESyntaxTranspiler {
 
     return output.toString();
   }
+
 
   private String transpile_assign(IAST n){
     return inner_transpile(n.middle) + " = " + inner_transpile((IAST) n.value);

@@ -1,3 +1,4 @@
+import jamiebalfour.HelperFunctions;
 import jamiebalfour.zpe.core.CovertibleFunction;
 import jamiebalfour.zpe.core.IAST;
 import jamiebalfour.zpe.core.YASSByteCodes;
@@ -96,8 +97,11 @@ public class Transpiler implements ZPESyntaxTranspiler {
       case YASSByteCodes.DOUBLE:{
         return n.value.toString();
       }
-      case YASSByteCodes.FOR_TO:{
+      case YASSByteCodes.FOR:{
         return transpile_for(n);
+      }
+      case YASSByteCodes.FOR_TO:{
+        return transpile_for_to(n);
       }
       case YASSByteCodes.IF:{
         return transpile_if(n);
@@ -211,8 +215,30 @@ public class Transpiler implements ZPESyntaxTranspiler {
     return inner_transpile(n.left) + " or " + inner_transpile(n.next);
   }
 
-  private String transpile_for(IAST n){
+  private String transpile_for_to(IAST n){
     StringBuilder output = new StringBuilder("for " + inner_transpile(n.middle.left.middle) + " in range(" + inner_transpile((IAST) n.middle.left.value) + ", " + inner_transpile((IAST) ((IAST) n.value).value) + "):" + System.lineSeparator());
+
+    indentation++;
+
+    IAST current = n.left.next;
+    while(current != null){
+      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+      current = current.next;
+    }
+
+    indentation--;
+
+
+    return output.toString();
+  }
+
+  private String transpile_for(IAST n){
+    String steps = "";
+    if (n.middle.value instanceof String) {
+      // Increasing the number of steps
+      steps = ", " + n.middle.value;
+    }
+    StringBuilder output = new StringBuilder("for " + inner_transpile(n.middle.left.middle) + " in range(" + inner_transpile((IAST) n.middle.left.value) + ", " + inner_transpile(((IAST) ((IAST) n.value).value).middle) + steps + "):" + System.lineSeparator());
 
     indentation++;
 
@@ -240,6 +266,23 @@ public class Transpiler implements ZPESyntaxTranspiler {
     }
 
     indentation--;
+
+    //It could be else or else if
+    if(n.middle != null){
+      if(n.middle.type != YASSByteCodes.ELSEIF){
+        output.append("else:").append(System.lineSeparator());
+
+        indentation++;
+
+        current = n.middle;
+        while(current != null){
+          output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+          current = current.next;
+        }
+
+        indentation--;
+      }
+    }
 
 
     return output.toString();

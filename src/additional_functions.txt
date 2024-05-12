@@ -1,0 +1,21 @@
+def _put(i, e, v):
+  if type(i) == type({}):
+    i[e] = v
+--
+def list_swap_elements(l, a, b):
+  tmp = l[a]
+  l[a] = l[b]
+  l[b] = tmp
+  return l
+--
+def map_get_keys(m):
+  return m.keys()
+--
+def throw_error(msg):
+  raise Exception(msg)
+--
+def list_add_element(l, e):
+  return l.append(e)
+--
+def random_number(max, min):
+  random.randint(min, max)

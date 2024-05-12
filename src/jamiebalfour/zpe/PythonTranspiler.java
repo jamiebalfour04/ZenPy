@@ -1,7 +1,9 @@
 package jamiebalfour.zpe;
 
+import jamiebalfour.HelperFunctions;
 import jamiebalfour.zpe.core.IAST;
 import jamiebalfour.zpe.core.YASSByteCodes;
+import jamiebalfour.zpe.core.ZPE;
 import jamiebalfour.zpe.core.ZPEKit;
 
 import java.util.ArrayList;
@@ -25,10 +27,13 @@ public class PythonTranspiler {
     yassToPythonFunctionMapping.put("auto_input", "input");
     yassToPythonFunctionMapping.put("floor", "math.floor");
     yassToPythonFunctionMapping.put("list_get_length", "len");
+    yassToPythonFunctionMapping.put("time", "datetime.datetime.now");
 
 
     pythonImports.put("floor", "math");
     pythonImports.put("ceiling", "math");
+    pythonImports.put("random_number", "random");
+    pythonImports.put("time", "datetime");
 
 
 
@@ -48,27 +53,22 @@ public class PythonTranspiler {
 
     StringBuilder additionalFuncs = new StringBuilder();
 
-    //This is temporary
-    if(usedFunctions.contains("list_swap_elements")){
-      additionalFuncs.append(
-              "def list_swap_elements(l, a, b):\n" +
-              "  tmp = l[a]\n" +
-              "  l[a] = l[b]\n" +
-              "  l[b] = tmp\n" +
-              "  return l").append(System.lineSeparator());
+    for(String fun : HelperFunctions.GetResource("/additional_functions.txt").split("--")){
+      StringBuilder funcName = new StringBuilder();
+      if(!fun.isEmpty() && fun.charAt(0) == '\n'){
+        fun = fun.substring(1);
+      }
+      int i = 4;
+      while(i < fun.length() && fun.charAt(i) != ' ' && fun.charAt(i) != '('){
+        funcName.append(fun.charAt(i));
+        i++;
+      }
+      if(usedFunctions.contains(funcName.toString())){
+        additionalFuncs.append(fun);
+      }
     }
 
-    if(usedFunctions.contains("map_get_keys")){
-      additionalFuncs.append(
-              "def map_get_keys(m):\n" +
-                      "  return m.keys()").append(System.lineSeparator());
-    }
-
-    if(usedFunctions.contains("throw_error")){
-      additionalFuncs.append(
-              "def throw_error(msg):\n" +
-                      "  raise Exception(msg)").append(System.lineSeparator());
-    }
+    ZPE.Print(System.lineSeparator());
 
 
 
@@ -131,6 +131,9 @@ public class PythonTranspiler {
       case YASSByteCodes.COUNT:{
         return "len(" + generateParameters(n.left) + ")";
       }
+      case YASSByteCodes.NEGATION:{
+        return "not(" + inner_transpile(((IAST) n.value).next) + ")";
+      }
       case YASSByteCodes.ASSIGN:{
         return transpile_assign(n);
       }
@@ -180,7 +183,18 @@ public class PythonTranspiler {
         return transpile_division(n);
       }
       case YASSByteCodes.STRING:{
-        return "\"" + n.value.toString() + "\"";
+        return "\"" + n.value.toString().replace('"', '\'') + "\"";
+      }
+      case YASSByteCodes.PRE_INCREMENT:
+      case YASSByteCodes.POST_INCREMENT:{
+        return transpile_var(n) + " += " + "1" ;
+      }
+      case YASSByteCodes.PRE_DECREMENT:
+      case YASSByteCodes.POST_DECREMENT:{
+        return transpile_var(n) + " -= " + "1" ;
+      }
+      case YASSByteCodes.DOT:{
+        return transpile_dot_expression(n);
       }
       case YASSByteCodes.LIST:{
         return "[" + generateParameters((IAST)n.value) + "]";
@@ -200,6 +214,9 @@ public class PythonTranspiler {
       }
       case YASSByteCodes.FOR_TO:{
         return transpile_for_to(n);
+      }
+      case YASSByteCodes.EACH:{
+        return transpile_for_each(n);
       }
       case YASSByteCodes.IF:{
         return transpile_if(n);
@@ -269,6 +286,18 @@ public class PythonTranspiler {
     }
 
     return n.id;
+  }
+
+  private String transpile_dot_expression(IAST n){
+
+    if(((IAST) n.value).id.equals("put")){
+      usedFunctions.add("_put");
+      return "_put(" + inner_transpile(n.left) + ", " + n.left + ", " + generateParameters ((IAST)((IAST) n.value).value) + ")";
+    } else{
+      return inner_transpile(n.left) + "." + inner_transpile((IAST) n.value);
+    }
+
+
   }
 
   private String transpile_map(IAST n){
@@ -433,6 +462,29 @@ public class PythonTranspiler {
     indentation++;
 
     IAST current = n.left.next;
+    while(current != null){
+      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+      current = current.next;
+    }
+
+    indentation--;
+
+
+    return output.toString();
+  }
+
+  private String transpile_for_each(IAST n){
+    String mid;
+    if(n.left.middle.type == YASSByteCodes.VAR){
+      mid = n.left.middle.value.toString().replace("$", "");
+    } else{
+      mid = inner_transpile(n.left.middle);
+    }
+    StringBuilder output = new StringBuilder("for " + mid + " in " + inner_transpile(n.left.left)  + ":" + System.lineSeparator());
+
+    indentation++;
+
+    IAST current = n.middle;
     while(current != null){
       output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
       current = current.next;

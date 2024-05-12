@@ -112,6 +112,9 @@ public class Transpiler implements ZPESyntaxTranspiler {
       case YASSByteCodes.IF:{
         return transpile_if(n);
       }
+      case YASSByteCodes.INDEX_ACCESSOR:{
+        return inner_transpile((IAST) n.left) + "[" + inner_transpile((IAST) n.value) + "]";
+      }
     }
     return "";
   }

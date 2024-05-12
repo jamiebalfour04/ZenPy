@@ -2,6 +2,7 @@ package jamiebalfour.zpe;
 
 import jamiebalfour.zpe.core.IAST;
 import jamiebalfour.zpe.core.YASSByteCodes;
+import jamiebalfour.zpe.core.ZPEKit;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,11 +10,13 @@ import java.util.HashMap;
 public class PythonTranspiler {
 
   int indentation = 0;
+  boolean inClassDef = false;
 
   HashMap<String, String> yassToPythonFunctionMapping = new HashMap<>();
   HashMap<String, String> pythonImports = new HashMap<>();
 
   ArrayList<String> imports = new ArrayList<>();
+  ArrayList<String> usedFunctions = new ArrayList<>();
 
   public String Transpile(IAST code, String s) {
 
@@ -21,9 +24,13 @@ public class PythonTranspiler {
     yassToPythonFunctionMapping.put("std_in", "print");
     yassToPythonFunctionMapping.put("auto_input", "input");
     yassToPythonFunctionMapping.put("floor", "math.floor");
+    yassToPythonFunctionMapping.put("list_get_length", "len");
+
 
     pythonImports.put("floor", "math");
     pythonImports.put("ceiling", "math");
+
+
 
     StringBuilder output = new StringBuilder();
     IAST current = code;
@@ -39,7 +46,33 @@ public class PythonTranspiler {
       importStr += "import " + i + System.lineSeparator();
     }
 
-    return importStr + output.toString();
+    StringBuilder additionalFuncs = new StringBuilder();
+
+    //This is temporary
+    if(usedFunctions.contains("list_swap_elements")){
+      additionalFuncs.append(
+              "def list_swap_elements(l, a, b):\n" +
+              "  tmp = l[a]\n" +
+              "  l[a] = l[b]\n" +
+              "  l[b] = tmp\n" +
+              "  return l").append(System.lineSeparator());
+    }
+
+    if(usedFunctions.contains("map_get_keys")){
+      additionalFuncs.append(
+              "def map_get_keys(m):\n" +
+                      "  return m.keys()").append(System.lineSeparator());
+    }
+
+    if(usedFunctions.contains("throw_error")){
+      additionalFuncs.append(
+              "def throw_error(msg):\n" +
+                      "  raise Exception(msg)").append(System.lineSeparator());
+    }
+
+
+
+    return importStr + additionalFuncs + output;
 
   }
 
@@ -66,6 +99,7 @@ public class PythonTranspiler {
         return transpile_identifier(n);
       }
       case YASSByteCodes.VAR:
+      case YASSByteCodes.VAR_BY_REF:
       case YASSByteCodes.CONST:{
         return transpile_var(n);
       }
@@ -88,6 +122,12 @@ public class PythonTranspiler {
       case YASSByteCodes.NEW:{
         return n.id + "("+generateParameters((IAST) n.value)+")";
       }
+      case YASSByteCodes.CONCAT:{
+        return "str(" + inner_transpile(n.left) + ") + str(" + inner_transpile(n.next) + ")";
+      }
+      case YASSByteCodes.NULL:{
+        return "None";
+      }
       case YASSByteCodes.COUNT:{
         return "len(" + generateParameters(n.left) + ")";
       }
@@ -97,8 +137,14 @@ public class PythonTranspiler {
       case YASSByteCodes.EXPRESSION:{
         return transpile_expression(n);
       }
+      case YASSByteCodes.MATCH:{
+        return transpile_match(n);
+      }
       case YASSByteCodes.EQUAL:{
         return transpile_equal_to(n);
+      }
+      case YASSByteCodes.NEQUAL:{
+        return transpile_not_equal_to(n);
       }
       case YASSByteCodes.GT:{
         return transpile_greater_than(n);
@@ -117,6 +163,9 @@ public class PythonTranspiler {
       }
       case YASSByteCodes.LOR:{
         return transpile_or(n);
+      }
+      case YASSByteCodes.MODULO:{
+        return transpile_modulo(n);
       }
       case YASSByteCodes.PLUS:{
         return transpile_addition(n);
@@ -138,6 +187,9 @@ public class PythonTranspiler {
       }
       case YASSByteCodes.ASSOCIATION:{
         return transpile_map(n);
+      }
+      case YASSByteCodes.NEGATIVE: {
+        return "-" + inner_transpile((IAST)n.value);
       }
       case YASSByteCodes.INT:
       case YASSByteCodes.DOUBLE:{
@@ -200,7 +252,11 @@ public class PythonTranspiler {
       addImport(pythonImports.get(n.id));
     }
 
-    output += " (" + generateParameters((IAST) n.value) + ")";
+    if(ZPEKit.internalFunctionExists(n.id)){
+      usedFunctions.add(n.id);
+    }
+
+    output += "(" + generateParameters((IAST) n.value) + ")";
 
     return output;
   }
@@ -240,9 +296,42 @@ public class PythonTranspiler {
 
   }
 
+  public String transpile_match(IAST n){
+    StringBuilder output = new StringBuilder();
+
+    output.append("{");
+
+    IAST current = n.left;
+    while(current != null){
+      output.append(inner_transpile(current.left));
+
+      output.append(" : ");
+      output.append(inner_transpile(current.middle));
+      current = current.next;
+      if(current != null){
+        output.append(", ");
+      }
+    }
+
+    output.append("} " + "[" + inner_transpile((IAST) n.value) + "]");
+
+    return output.toString();
+  }
+
   private String transpile_function(IAST n){
     //Transpilation of a function
-    StringBuilder output = new StringBuilder("def " + n.id + "(" + generateParameters((IAST)n.value) + ")" + ":" + System.lineSeparator());
+    String params = generateParameters((IAST)n.value);
+    //Stupid Python
+    if(inClassDef){
+      if(params.length() > 0){
+        params = "self, " + params;
+      } else{
+        params = "self";
+      }
+
+    }
+
+    StringBuilder output = new StringBuilder("def " + n.id + "(" + params + ")" + ":" + System.lineSeparator());
     indentation++;
 
     IAST current = n.left;
@@ -258,6 +347,7 @@ public class PythonTranspiler {
 
   private String transpile_structure(IAST n){
     //Transpilation of a function
+    inClassDef = true;
     StringBuilder output = new StringBuilder("class " + n.id + ":" + System.lineSeparator());
     indentation++;
 
@@ -269,7 +359,9 @@ public class PythonTranspiler {
 
     indentation--;
 
+    inClassDef = false;
     return output.toString();
+
   }
 
 
@@ -287,6 +379,10 @@ public class PythonTranspiler {
     return inner_transpile(n.left) + " == " + inner_transpile(n.middle);
   }
 
+  private String transpile_not_equal_to(IAST n){
+    return inner_transpile(n.left) + " != " + inner_transpile(n.middle);
+  }
+
   private String transpile_greater_than(IAST n){
     return inner_transpile(n.left) + " > " + inner_transpile(n.middle);
   }
@@ -301,6 +397,10 @@ public class PythonTranspiler {
 
   private String transpile_less_than_or_equal(IAST n){
     return inner_transpile(n.left) + " <= " + inner_transpile(n.middle);
+  }
+
+  private String transpile_modulo(IAST n){
+    return inner_transpile(n.left) + " % " + inner_transpile(n.next);
   }
 
   private String transpile_addition(IAST n){
@@ -382,6 +482,8 @@ public class PythonTranspiler {
     //It could be else or else if
     if(n.middle != null){
       if(n.middle.type != YASSByteCodes.ELSEIF){
+
+        //We need to ensure that the world else is also indented
         output.append(addIndentation()).append("else:").append(System.lineSeparator());
 
         indentation++;

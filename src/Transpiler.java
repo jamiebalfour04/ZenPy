@@ -1,7 +1,6 @@
+import jamiebalfour.zpe.PythonTranspiler;
 import jamiebalfour.zpe.core.IAST;
 import jamiebalfour.zpe.interfaces.ZPESyntaxTranspiler;
-
-import java.util.HashMap;
 
 public class Transpiler implements ZPESyntaxTranspiler {
 

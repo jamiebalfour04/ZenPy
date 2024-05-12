@@ -1,6 +1,9 @@
+package jamiebalfour.zpe;
+
 import jamiebalfour.zpe.core.IAST;
 import jamiebalfour.zpe.core.YASSByteCodes;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PythonTranspiler {
@@ -8,24 +11,42 @@ public class PythonTranspiler {
   int indentation = 0;
 
   HashMap<String, String> yassToPythonFunctionMapping = new HashMap<>();
+  HashMap<String, String> pythonImports = new HashMap<>();
+
+  ArrayList<String> imports = new ArrayList<>();
 
   public String Transpile(IAST code, String s) {
 
 
-    yassToPythonFunctionMapping.put("print", "print");
-    yassToPythonFunctionMapping.put("input", "input");
+    yassToPythonFunctionMapping.put("std_in", "print");
+    yassToPythonFunctionMapping.put("auto_input", "input");
+    yassToPythonFunctionMapping.put("floor", "math.floor");
+
+    pythonImports.put("floor", "math");
+    pythonImports.put("ceiling", "math");
 
     StringBuilder output = new StringBuilder();
     IAST current = code;
+
     while(current != null){
       output.append(inner_transpile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
+    //Get all imports and add them
+    String importStr = "";
+    for(String i : imports){
+      importStr += "import " + i + System.lineSeparator();
+    }
 
+    return importStr + output.toString();
 
-    return output.toString();
+  }
 
+  private void addImport(String i){
+    if(!imports.contains(i)){
+      imports.add(i);
+    }
   }
 
   private String addIndentation(){
@@ -44,17 +65,40 @@ public class PythonTranspiler {
       case YASSByteCodes.IDENTIFIER: {
         return transpile_identifier(n);
       }
-      case YASSByteCodes.VAR: {
+      case YASSByteCodes.VAR:
+      case YASSByteCodes.CONST:{
         return transpile_var(n);
       }
       case YASSByteCodes.FUNCTION:{
         return transpile_function(n);
+      }
+      case YASSByteCodes.BOOL:{
+        //Deal with Python's uppercase boolean values
+        return (n.value.toString().substring(0, 1)).toUpperCase() + n.value.toString().substring(1);
+      }
+      case YASSByteCodes.STRUCTURE:{
+        return transpile_structure(n);
+      }
+      case YASSByteCodes.OBJECT_POINTER:{
+        return inner_transpile(n.middle) + "." + inner_transpile((IAST) n.value);
+      }
+      case YASSByteCodes.THIS:{
+        return "self";
+      }
+      case YASSByteCodes.NEW:{
+        return n.id + "("+generateParameters((IAST) n.value)+")";
+      }
+      case YASSByteCodes.COUNT:{
+        return "len(" + generateParameters(n.left) + ")";
       }
       case YASSByteCodes.ASSIGN:{
         return transpile_assign(n);
       }
       case YASSByteCodes.EXPRESSION:{
         return transpile_expression(n);
+      }
+      case YASSByteCodes.EQUAL:{
+        return transpile_equal_to(n);
       }
       case YASSByteCodes.GT:{
         return transpile_greater_than(n);
@@ -108,9 +152,22 @@ public class PythonTranspiler {
       case YASSByteCodes.IF:{
         return transpile_if(n);
       }
+      case YASSByteCodes.WHILE:{
+        return transpile_while(n);
+      }
+      case YASSByteCodes.TYPED_PARAMETER:{
+        return inner_transpile(n.left);
+      }
       case YASSByteCodes.INDEX_ACCESSOR:{
         return inner_transpile((IAST) n.left) + "[" + inner_transpile((IAST) n.value) + "]";
       }
+      case YASSByteCodes.LBRA:{
+        return "(" + inner_transpile((IAST) n.value) + ")";
+      }
+      case YASSByteCodes.RETURN:{
+        return "return " + inner_transpile(n.left);
+      }
+
     }
     return "";
   }
@@ -137,6 +194,10 @@ public class PythonTranspiler {
       output += yassToPythonFunctionMapping.get(n.id);
     } else{
       output += n.id;
+    }
+
+    if(pythonImports.containsKey(n.id)){
+      addImport(pythonImports.get(n.id));
     }
 
     output += " (" + generateParameters((IAST) n.value) + ")";
@@ -195,6 +256,22 @@ public class PythonTranspiler {
     return output.toString();
   }
 
+  private String transpile_structure(IAST n){
+    //Transpilation of a function
+    StringBuilder output = new StringBuilder("class " + n.id + ":" + System.lineSeparator());
+    indentation++;
+
+    IAST current = (IAST) n.value;
+    while(current != null){
+      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+      current = current.next;
+    }
+
+    indentation--;
+
+    return output.toString();
+  }
+
 
   private String transpile_assign(IAST n){
     return inner_transpile(n.middle) + " = " + inner_transpile((IAST) n.value);
@@ -204,6 +281,10 @@ public class PythonTranspiler {
     //Transpilation of an expression
     IAST current = (IAST) n.value;
     return inner_transpile(current);
+  }
+
+  private String transpile_equal_to(IAST n){
+    return inner_transpile(n.left) + " == " + inner_transpile(n.middle);
   }
 
   private String transpile_greater_than(IAST n){
@@ -301,7 +382,7 @@ public class PythonTranspiler {
     //It could be else or else if
     if(n.middle != null){
       if(n.middle.type != YASSByteCodes.ELSEIF){
-        output.append("else:").append(System.lineSeparator());
+        output.append(addIndentation()).append("else:").append(System.lineSeparator());
 
         indentation++;
 
@@ -314,6 +395,23 @@ public class PythonTranspiler {
         indentation--;
       }
     }
+
+
+    return output.toString();
+  }
+
+  private String transpile_while(IAST n){
+    StringBuilder output = new StringBuilder("while " + inner_transpile((IAST)n.value) + ":" + System.lineSeparator());
+
+    indentation++;
+
+    IAST current = n.left;
+    while(current != null){
+      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+      current = current.next;
+    }
+
+    indentation--;
 
 
     return output.toString();

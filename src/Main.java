@@ -3,7 +3,7 @@ import java.io.IOException;
 
 public class Main {
   public static void main(String[] args) {
-    System.out.println("yass-python transpiler for ZPE");
+    System.out.println("YASS to Python transpiler for ZPE");
     test();
   }
 

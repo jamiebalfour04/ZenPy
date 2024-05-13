@@ -51,6 +51,7 @@ public class PythonTranspiler {
       importStr += "import " + i + System.lineSeparator();
     }
 
+
     StringBuilder additionalFuncs = new StringBuilder();
 
     for(String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")){

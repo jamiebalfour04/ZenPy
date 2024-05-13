@@ -53,7 +53,7 @@ public class PythonTranspiler {
 
     StringBuilder additionalFuncs = new StringBuilder();
 
-    for(String fun : HelperFunctions.GetResource("/additional_functions.txt").split("--")){
+    for(String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")){
       StringBuilder funcName = new StringBuilder();
       if(!fun.isEmpty() && fun.charAt(0) == '\n'){
         fun = fun.substring(1);

@@ -15,4 +15,9 @@ public class Transpiler implements ZPESyntaxTranspiler {
   public String LanguageName() {
     return "Python";
   }
+
+  @Override
+  public String FileExtension() {
+    return "py";
+  }
 }

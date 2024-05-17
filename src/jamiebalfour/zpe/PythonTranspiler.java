@@ -19,6 +19,7 @@ public class PythonTranspiler {
 
   ArrayList<String> imports = new ArrayList<>();
   ArrayList<String> usedFunctions = new ArrayList<>();
+  ArrayList<String> addedFunctions = new ArrayList<>();
 
   public String Transpile(IAST code, String s) {
 
@@ -64,7 +65,7 @@ public class PythonTranspiler {
         funcName.append(fun.charAt(i));
         i++;
       }
-      if(usedFunctions.contains(funcName.toString())){
+      if(usedFunctions.contains(funcName.toString()) && !(addedFunctions.contains(funcName.toString()))){
         additionalFuncs.append(fun);
       }
     }
@@ -361,6 +362,7 @@ public class PythonTranspiler {
 
     }
 
+    addedFunctions.add(n.id);
     StringBuilder output = new StringBuilder("def " + n.id + "(" + params + ")" + ":" + System.lineSeparator());
     indentation++;
 

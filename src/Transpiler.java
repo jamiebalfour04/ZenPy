@@ -5,6 +5,11 @@ import jamiebalfour.zpe.interfaces.ZPESyntaxTranspiler;
 public class Transpiler implements ZPESyntaxTranspiler {
 
   @Override
+  public String transpilerName() {
+    return "ZenPy";
+  }
+
+  @Override
   public String transpile(IAST code, String s) {
 
     return new PythonTranspiler().Transpile(code, s);

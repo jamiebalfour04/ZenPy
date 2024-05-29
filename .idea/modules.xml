@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/yass-python-transpiler.iml" filepath="$PROJECT_DIR$/yass-python-transpiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ZenPy.iml" filepath="$PROJECT_DIR$/ZenPy.iml" />
     </modules>
   </component>
 </project>

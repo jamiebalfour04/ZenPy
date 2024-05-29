@@ -5,19 +5,19 @@ import jamiebalfour.zpe.interfaces.ZPESyntaxTranspiler;
 public class Transpiler implements ZPESyntaxTranspiler {
 
   @Override
-  public String Transpile(IAST code, String s) {
+  public String transpile(IAST code, String s) {
 
     return new PythonTranspiler().Transpile(code, s);
 
   }
 
   @Override
-  public String LanguageName() {
+  public String getLanguageName() {
     return "Python";
   }
 
   @Override
-  public String FileExtension() {
+  public String getFileExtension() {
     return "py";
   }
 }

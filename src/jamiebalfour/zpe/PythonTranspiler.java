@@ -27,14 +27,16 @@ public class PythonTranspiler {
     yassToPythonFunctionMapping.put("std_in", "print");
     yassToPythonFunctionMapping.put("auto_input", "input");
     yassToPythonFunctionMapping.put("floor", "math.floor");
+    yassToPythonFunctionMapping.put("factorial", "math.factorial");
     yassToPythonFunctionMapping.put("list_get_length", "len");
-    yassToPythonFunctionMapping.put("time", "datetime.datetime.now");
+    yassToPythonFunctionMapping.put("time", "time.time");
+    yassToPythonFunctionMapping.put("map_create_ordered", "");
 
 
     pythonImports.put("floor", "math");
     pythonImports.put("ceiling", "math");
     pythonImports.put("random_number", "random");
-    pythonImports.put("time", "datetime");
+    pythonImports.put("time", "time");
 
 
 
@@ -47,9 +49,9 @@ public class PythonTranspiler {
     }
 
     //Get all imports and add them
-    String importStr = "";
+    StringBuilder importStr = new StringBuilder();
     for(String i : imports){
-      importStr += "import " + i + System.lineSeparator();
+      importStr.append("import ").append(i).append(System.lineSeparator());
     }
 
 
@@ -72,9 +74,12 @@ public class PythonTranspiler {
 
     ZPE.Print(System.lineSeparator());
 
+    output.append(System.lineSeparator()).append("main()");
 
 
-    return importStr + additionalFuncs + output;
+
+
+    return importStr.toString() + additionalFuncs + output;
 
   }
 
@@ -122,7 +127,7 @@ public class PythonTranspiler {
         return "self";
       }
       case YASSByteCodes.NEW:{
-        return n.id + "("+generateParameters((IAST) n.value)+")";
+        return transpile_new(n);
       }
       case YASSByteCodes.CONCAT:{
         return "str(" + inner_transpile(n.left) + ") + str(" + inner_transpile(n.next) + ")";
@@ -238,6 +243,9 @@ public class PythonTranspiler {
       case YASSByteCodes.RETURN:{
         return "return " + inner_transpile(n.left);
       }
+      case YASSByteCodes.EMPTY:{
+        return "len(" + inner_transpile((IAST) n.left) + ") == 0";
+      }
 
     }
     return "";
@@ -280,14 +288,24 @@ public class PythonTranspiler {
     return output;
   }
 
+  private String checkId(String id){
+    if(id.equals("len")){
+      id = "leng";
+    }
+    return id;
+  }
+
   private String transpile_var(IAST n){
     //Transpilation of a variable
 
-    if(n.id.startsWith("$")){
-      return n.id.substring(1);
+    String id = checkId(n.id);
+    if(id.startsWith("$")){
+      return id.substring(1);
     }
 
-    return n.id;
+
+
+    return id;
   }
 
   private String transpile_dot_expression(IAST n){
@@ -344,7 +362,7 @@ public class PythonTranspiler {
       }
     }
 
-    output.append("} " + "[" + inner_transpile((IAST) n.value) + "]");
+    output.append("} " + "[").append(inner_transpile((IAST) n.value)).append("]");
 
     return output.toString();
   }
@@ -354,7 +372,7 @@ public class PythonTranspiler {
     String params = generateParameters((IAST)n.value);
     //Stupid Python
     if(inClassDef){
-      if(params.length() > 0){
+      if(!params.isEmpty()){
         params = "self, " + params;
       } else{
         params = "self";
@@ -362,8 +380,21 @@ public class PythonTranspiler {
 
     }
 
-    addedFunctions.add(n.id);
-    StringBuilder output = new StringBuilder("def " + n.id + "(" + params + ")" + ":" + System.lineSeparator());
+    String id = n.id;
+    //Remove namespaces
+    if(n.id.contains("/")){
+      id = n.id.replace("/", "_");
+    }
+
+    if(id.equals("_construct")){
+      id = "__init__";
+    }
+    if(id.equals("_output")){
+      id = "__str__";
+    }
+
+    addedFunctions.add(id);
+    StringBuilder output = new StringBuilder("def " + id + "(" + params + ")" + ":" + System.lineSeparator());
     indentation++;
 
     IAST current = n.left;
@@ -380,8 +411,17 @@ public class PythonTranspiler {
   private String transpile_structure(IAST n){
     //Transpilation of a function
     inClassDef = true;
-    StringBuilder output = new StringBuilder("class " + n.id + ":" + System.lineSeparator());
+
+    String id = n.id;
+    //Remove namespaces
+    if(n.id.contains("/")){
+      id = n.id.replace("/", "_");
+    }
+
+    StringBuilder output = new StringBuilder("class " + id + ":" + System.lineSeparator());
     indentation++;
+
+
 
     IAST current = (IAST) n.value;
     while(current != null){
@@ -394,6 +434,16 @@ public class PythonTranspiler {
     inClassDef = false;
     return output.toString();
 
+  }
+
+  private String transpile_new(IAST n){
+    String id = n.id;
+    //Remove namespaces
+    if(n.id.contains("/")){
+      id = n.id.replace("/", "_");
+    }
+
+    return id + "("+generateParameters((IAST) n.value)+")";
   }
 
 

@@ -15,7 +15,12 @@ def throw_error(msg):
   raise Exception(msg)
 --
 def list_add_element(l, e):
-  return l.append(e)
+  l.append(e)
+  return l
+--
+def list_remove_element(l, e):
+  l.pop(e)
+  return l
 --
 def random_number(max, min):
   random.randint(min, max)

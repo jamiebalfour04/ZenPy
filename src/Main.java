@@ -1,5 +1,6 @@
 
 import jamiebalfour.zpe.core.ZPE;
+import jamiebalfour.zpe.interfaces.ZPEException;
 
 import java.io.IOException;
 
@@ -19,7 +20,7 @@ public class Main {
       System.out.println(s);
       jamiebalfour.HelperFunctions.WriteFile(output, s, false);
       System.out.println(jamiebalfour.HelperFunctions.ShellExec("python3 " + output));
-    } catch (jamiebalfour.zpe.core.errors.CompileError e) {
+    } catch (ZPEException e) {
       throw new RuntimeException(e);
     } catch (IOException e) {
       throw new RuntimeException(e);

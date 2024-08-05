@@ -39,35 +39,34 @@ public class PythonTranspiler {
     pythonImports.put("time", "time");
 
 
-
     StringBuilder output = new StringBuilder();
     IAST current = code;
 
-    while(current != null){
-      output.append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
     //Get all imports and add them
     StringBuilder importStr = new StringBuilder();
-    for(String i : imports){
+    for (String i : imports) {
       importStr.append("import ").append(i).append(System.lineSeparator());
     }
 
 
     StringBuilder additionalFuncs = new StringBuilder();
 
-    for(String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")){
+    for (String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
       StringBuilder funcName = new StringBuilder();
-      if(!fun.isEmpty() && fun.charAt(0) == '\n'){
+      if (!fun.isEmpty() && fun.charAt(0) == '\n') {
         fun = fun.substring(1);
       }
       int i = 4;
-      while(i < fun.length() && fun.charAt(i) != ' ' && fun.charAt(i) != '('){
+      while (i < fun.length() && fun.charAt(i) != ' ' && fun.charAt(i) != '(') {
         funcName.append(fun.charAt(i));
         i++;
       }
-      if(usedFunctions.contains(funcName.toString()) && !(addedFunctions.contains(funcName.toString()))){
+      if (usedFunctions.contains(funcName.toString()) && !(addedFunctions.contains(funcName.toString()))) {
         additionalFuncs.append(fun);
       }
     }
@@ -77,22 +76,20 @@ public class PythonTranspiler {
     output.append(System.lineSeparator()).append("main()");
 
 
-
-
     return importStr.toString() + additionalFuncs + output;
 
   }
 
-  private void addImport(String i){
-    if(!imports.contains(i)){
+  private void addImport(String i) {
+    if (!imports.contains(i)) {
       imports.add(i);
     }
   }
 
-  private String addIndentation(){
-    if(indentation > 0){
+  private String addIndentation() {
+    if (indentation > 0) {
       StringBuilder out = new StringBuilder();
-      for (int i = 0; i < indentation; i++){
+      for (int i = 0; i < indentation; i++) {
         out.append("  ");
       }
       return out.toString();
@@ -100,186 +97,189 @@ public class PythonTranspiler {
     return "";
   }
 
-  private String inner_transpile(IAST n){
-    switch (n.type){
+  private String innerTranspile(IAST n) {
+    switch (n.type) {
       case YASSByteCodes.IDENTIFIER: {
-        return transpile_identifier(n);
+        return transpileIdentifier(n);
       }
       case YASSByteCodes.VAR:
       case YASSByteCodes.VAR_BY_REF:
-      case YASSByteCodes.CONST:{
+      case YASSByteCodes.CONST: {
         return transpile_var(n);
       }
-      case YASSByteCodes.FUNCTION:{
-        return transpile_function(n);
+      case YASSByteCodes.FUNCTION: {
+        return transpileFunction(n);
       }
-      case YASSByteCodes.BOOL:{
+      case YASSByteCodes.BOOL: {
         //Deal with Python's uppercase boolean values
         return (n.value.toString().substring(0, 1)).toUpperCase() + n.value.toString().substring(1);
       }
-      case YASSByteCodes.STRUCTURE:{
-        return transpile_structure(n);
+      case YASSByteCodes.STRUCTURE: {
+        return transpileStructure(n);
       }
-      case YASSByteCodes.OBJECT_POINTER:{
-        return inner_transpile(n.middle) + "." + inner_transpile((IAST) n.value);
+      case YASSByteCodes.OBJECT_POINTER: {
+        return innerTranspile(n.middle) + "." + innerTranspile((IAST) n.value);
       }
-      case YASSByteCodes.THIS:{
+      case YASSByteCodes.TYPE:{
+        return transpileType(n);
+      }
+      case YASSByteCodes.THIS: {
         return "self";
       }
-      case YASSByteCodes.NEW:{
-        return transpile_new(n);
+      case YASSByteCodes.NEW: {
+        return transpileNew(n);
       }
-      case YASSByteCodes.CONCAT:{
-        return "str(" + inner_transpile(n.left) + ") + str(" + inner_transpile(n.next) + ")";
+      case YASSByteCodes.CONCAT: {
+        return "str(" + innerTranspile(n.left) + ") + str(" + innerTranspile(n.next) + ")";
       }
-      case YASSByteCodes.NULL:{
+      case YASSByteCodes.NULL: {
         return "None";
       }
-      case YASSByteCodes.COUNT:{
+      case YASSByteCodes.COUNT: {
         return "len(" + generateParameters(n.left) + ")";
       }
-      case YASSByteCodes.NEGATION:{
-        return "not(" + inner_transpile(((IAST) n.value).next) + ")";
+      case YASSByteCodes.NEGATION: {
+        return "not(" + innerTranspile(((IAST) n.value).next) + ")";
       }
-      case YASSByteCodes.ASSIGN:{
-        return transpile_assign(n);
+      case YASSByteCodes.ASSIGN: {
+        return transpileAssign(n);
       }
-      case YASSByteCodes.EXPRESSION:{
-        return transpile_expression(n);
+      case YASSByteCodes.EXPRESSION: {
+        return transpileExpression(n);
       }
-      case YASSByteCodes.MATCH:{
-        return transpile_match(n);
+      case YASSByteCodes.MATCH: {
+        return transpileMatch(n);
       }
-      case YASSByteCodes.EQUAL:{
-        return transpile_equal_to(n);
+      case YASSByteCodes.EQUAL: {
+        return transpileEqualTo(n);
       }
-      case YASSByteCodes.NEQUAL:{
-        return transpile_not_equal_to(n);
+      case YASSByteCodes.NEQUAL: {
+        return transpileNotEqualTo(n);
       }
-      case YASSByteCodes.GT:{
-        return transpile_greater_than(n);
+      case YASSByteCodes.GT: {
+        return transpileGreaterThan(n);
       }
-      case YASSByteCodes.GTE:{
-        return transpile_greater_than_or_equal(n);
+      case YASSByteCodes.GTE: {
+        return transpileGreaterThanOrEqual(n);
       }
-      case YASSByteCodes.LT:{
-        return transpile_less_than(n);
+      case YASSByteCodes.LT: {
+        return transpileLessThan(n);
       }
-      case YASSByteCodes.LTE:{
-        return transpile_less_than_or_equal(n);
+      case YASSByteCodes.LTE: {
+        return transpileLessThanOrEqual(n);
       }
-      case YASSByteCodes.LAND:{
-        return transpile_and(n);
+      case YASSByteCodes.LAND: {
+        return transpileAnd(n);
       }
-      case YASSByteCodes.LOR:{
-        return transpile_or(n);
+      case YASSByteCodes.LOR: {
+        return transpileOr(n);
       }
-      case YASSByteCodes.MODULO:{
-        return transpile_modulo(n);
+      case YASSByteCodes.MODULO: {
+        return transpileModulo(n);
       }
-      case YASSByteCodes.PLUS:{
-        return transpile_addition(n);
+      case YASSByteCodes.PLUS: {
+        return transpileAddition(n);
       }
-      case YASSByteCodes.MINUS:{
-        return transpile_subtraction(n);
+      case YASSByteCodes.MINUS: {
+        return transpileSubtraction(n);
       }
-      case YASSByteCodes.MULT:{
-        return transpile_multiplication(n);
+      case YASSByteCodes.MULT: {
+        return transpileMultiplication(n);
       }
-      case YASSByteCodes.DIVIDE:{
-        return transpile_division(n);
+      case YASSByteCodes.DIVIDE: {
+        return transpileDivision(n);
       }
-      case YASSByteCodes.STRING:{
+      case YASSByteCodes.STRING: {
         return "\"" + n.value.toString().replace('"', '\'') + "\"";
       }
       case YASSByteCodes.PRE_INCREMENT:
-      case YASSByteCodes.POST_INCREMENT:{
-        return transpile_var(n) + " += " + "1" ;
+      case YASSByteCodes.POST_INCREMENT: {
+        return transpile_var(n) + " += " + "1";
       }
       case YASSByteCodes.PRE_DECREMENT:
-      case YASSByteCodes.POST_DECREMENT:{
-        return transpile_var(n) + " -= " + "1" ;
+      case YASSByteCodes.POST_DECREMENT: {
+        return transpile_var(n) + " -= " + "1";
       }
-      case YASSByteCodes.DOT:{
-        return transpile_dot_expression(n);
+      case YASSByteCodes.DOT: {
+        return transpileDotExpression(n);
       }
-      case YASSByteCodes.LIST:{
-        return "[" + generateParameters((IAST)n.value) + "]";
+      case YASSByteCodes.LIST: {
+        return "[" + generateParameters((IAST) n.value) + "]";
       }
-      case YASSByteCodes.ASSOCIATION:{
-        return transpile_map(n);
+      case YASSByteCodes.ASSOCIATION: {
+        return transpileMap(n);
       }
       case YASSByteCodes.NEGATIVE: {
-        return "-" + inner_transpile((IAST)n.value);
+        return "-" + innerTranspile((IAST) n.value);
       }
       case YASSByteCodes.INT:
-      case YASSByteCodes.DOUBLE:{
+      case YASSByteCodes.DOUBLE: {
         return n.value.toString();
       }
-      case YASSByteCodes.FOR:{
-        return transpile_for(n);
+      case YASSByteCodes.FOR: {
+        return transpileFor(n);
       }
-      case YASSByteCodes.FOR_TO:{
-        return transpile_for_to(n);
+      case YASSByteCodes.FOR_TO: {
+        return transpileForTo(n);
       }
-      case YASSByteCodes.EACH:{
-        return transpile_for_each(n);
+      case YASSByteCodes.EACH: {
+        return transpileForEach(n);
       }
-      case YASSByteCodes.IF:{
-        return transpile_if(n);
+      case YASSByteCodes.IF: {
+        return transpileIf(n);
       }
-      case YASSByteCodes.WHILE:{
-        return transpile_while(n);
+      case YASSByteCodes.WHILE: {
+        return transpileWhile(n);
       }
-      case YASSByteCodes.TYPED_PARAMETER:{
-        return inner_transpile(n.left);
+      case YASSByteCodes.TYPED_PARAMETER: {
+        return innerTranspile(n.left);
       }
-      case YASSByteCodes.INDEX_ACCESSOR:{
-        return inner_transpile((IAST) n.left) + "[" + inner_transpile((IAST) n.value) + "]";
+      case YASSByteCodes.INDEX_ACCESSOR: {
+        return innerTranspile((IAST) n.left) + "[" + innerTranspile((IAST) n.value) + "]";
       }
-      case YASSByteCodes.LBRA:{
-        return "(" + inner_transpile((IAST) n.value) + ")";
+      case YASSByteCodes.LBRA: {
+        return "(" + innerTranspile((IAST) n.value) + ")";
       }
-      case YASSByteCodes.RETURN:{
-        return "return " + inner_transpile(n.left);
+      case YASSByteCodes.RETURN: {
+        return "return " + innerTranspile(n.left);
       }
-      case YASSByteCodes.EMPTY:{
-        return "len(" + inner_transpile((IAST) n.left) + ") == 0";
+      case YASSByteCodes.EMPTY: {
+        return "len(" + innerTranspile((IAST) n.left) + ") == 0";
       }
 
     }
     return "";
   }
 
-  private String generateParameters(IAST n){
+  private String generateParameters(IAST n) {
     StringBuilder output = new StringBuilder();
     IAST current = n;
-    while(current != null){
-      output.append(inner_transpile(current));
+    while (current != null) {
+      output.append(innerTranspile(current));
       current = current.next;
-      if(current != null){
+      if (current != null) {
         output.append(", ");
       }
     }
     return output.toString();
   }
 
-  private String transpile_identifier(IAST n){
+  private String transpileIdentifier(IAST n) {
     //Transpilation of a function call or whatever (anything with an identification)
 
     String output = "";
 
-    if(yassToPythonFunctionMapping.containsKey(n.id)){
+    if (yassToPythonFunctionMapping.containsKey(n.id)) {
       output += yassToPythonFunctionMapping.get(n.id);
-    } else{
+    } else {
       output += n.id;
     }
 
-    if(pythonImports.containsKey(n.id)){
+    if (pythonImports.containsKey(n.id)) {
       addImport(pythonImports.get(n.id));
     }
 
-    if(ZPEKit.internalFunctionExists(n.id)){
+    if (ZPEKit.internalFunctionExists(n.id)) {
       usedFunctions.add(n.id);
     }
 
@@ -288,52 +288,63 @@ public class PythonTranspiler {
     return output;
   }
 
-  private String checkId(String id){
-    if(id.equals("len")){
+  private String checkId(String id) {
+    if (id.equals("len")) {
       id = "leng";
     }
     return id;
   }
 
-  private String transpile_var(IAST n){
+  private String transpile_var(IAST n) {
     //Transpilation of a variable
 
-    String id = checkId(n.id);
-    if(id.startsWith("$")){
-      return id.substring(1);
+    String id = n.id;
+    if (id.startsWith("$")) {
+      id= id.substring(1);
     }
 
+    id = checkId(id);
 
 
     return id;
   }
 
-  private String transpile_dot_expression(IAST n){
+  private String transpileDotExpression(IAST n) {
 
-    if(((IAST) n.value).id.equals("put")){
+    if (((IAST) n.value).id.equals("put")) {
       usedFunctions.add("_put");
-      return "_put(" + inner_transpile(n.left) + ", " + n.left + ", " + generateParameters ((IAST)((IAST) n.value).value) + ")";
-    } else{
-      return inner_transpile(n.left) + "." + inner_transpile((IAST) n.value);
+      return "_put(" + innerTranspile(n.left) + ", " + n.left + ", " + generateParameters((IAST) ((IAST) n.value).value) + ")";
+    } else if (((IAST) n.value).id.equals("length")) {
+      return "len(" + innerTranspile(n.left) + ")";
+    } else {
+      return innerTranspile(n.left) + "." + innerTranspile((IAST) n.value);
     }
 
 
   }
 
-  private String transpile_map(IAST n){
+  private String transpileType(IAST n){
+
+    usedFunctions.add("typeOf");
+
+    return "typeOf (" + innerTranspile((IAST) n.value) + ")";
+
+  }
+
+  private String transpileMap(IAST n) {
 
     StringBuilder output = new StringBuilder();
 
     output.append("{");
 
     IAST current = (IAST) n.value;
-    while(current != null){
-      output.append(inner_transpile(current));
+    while (current != null) {
+      output.append(innerTranspile(current));
       current = current.next;
       output.append(" : ");
-      output.append(inner_transpile(current));
+      output.append(innerTranspile(current));
       current = current.next;
-      if(current != null){
+      if (current != null) {
         output.append(", ");
       }
     }
@@ -345,36 +356,36 @@ public class PythonTranspiler {
 
   }
 
-  public String transpile_match(IAST n){
+  public String transpileMatch(IAST n) {
     StringBuilder output = new StringBuilder();
 
     output.append("{");
 
     IAST current = n.left;
-    while(current != null){
-      output.append(inner_transpile(current.left));
+    while (current != null) {
+      output.append(innerTranspile(current.left));
 
       output.append(" : ");
-      output.append(inner_transpile(current.middle));
+      output.append(innerTranspile(current.middle));
       current = current.next;
-      if(current != null){
+      if (current != null) {
         output.append(", ");
       }
     }
 
-    output.append("} " + "[").append(inner_transpile((IAST) n.value)).append("]");
+    output.append("} " + "[").append(innerTranspile((IAST) n.value)).append("]");
 
     return output.toString();
   }
 
-  private String transpile_function(IAST n){
+  private String transpileFunction(IAST n) {
     //Transpilation of a function
-    String params = generateParameters((IAST)n.value);
+    String params = generateParameters((IAST) n.value);
     //Stupid Python
-    if(inClassDef){
-      if(!params.isEmpty()){
+    if (inClassDef) {
+      if (!params.isEmpty()) {
         params = "self, " + params;
-      } else{
+      } else {
         params = "self";
       }
 
@@ -382,24 +393,24 @@ public class PythonTranspiler {
 
     String id = n.id;
     //Remove namespaces
-    if(n.id.contains("/")){
+    if (n.id.contains("/")) {
       id = n.id.replace("/", "_");
     }
 
-    if(id.equals("_construct")){
+    if (id.equals("_construct")) {
       id = "__init__";
     }
-    if(id.equals("_output")){
+    /*if (id.equals("_output")) {
       id = "__str__";
-    }
+    }*/
 
     addedFunctions.add(id);
     StringBuilder output = new StringBuilder("def " + id + "(" + params + ")" + ":" + System.lineSeparator());
     indentation++;
 
     IAST current = n.left;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
@@ -408,13 +419,13 @@ public class PythonTranspiler {
     return output.toString();
   }
 
-  private String transpile_structure(IAST n){
+  private String transpileStructure(IAST n) {
     //Transpilation of a function
     inClassDef = true;
 
     String id = n.id;
     //Remove namespaces
-    if(n.id.contains("/")){
+    if (n.id.contains("/")) {
       id = n.id.replace("/", "_");
     }
 
@@ -422,10 +433,9 @@ public class PythonTranspiler {
     indentation++;
 
 
-
     IAST current = (IAST) n.value;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
@@ -436,87 +446,86 @@ public class PythonTranspiler {
 
   }
 
-  private String transpile_new(IAST n){
+  private String transpileNew(IAST n) {
     String id = n.id;
     //Remove namespaces
-    if(n.id.contains("/")){
+    if (n.id.contains("/")) {
       id = n.id.replace("/", "_");
     }
 
-    return id + "("+generateParameters((IAST) n.value)+")";
+    return id + "(" + generateParameters((IAST) n.value) + ")";
   }
 
-
-  private String transpile_assign(IAST n){
-    return inner_transpile(n.middle) + " = " + inner_transpile((IAST) n.value);
+  private String transpileAssign(IAST n) {
+    return innerTranspile(n.middle) + " = " + innerTranspile((IAST) n.value);
   }
 
-  private String transpile_expression(IAST n){
+  private String transpileExpression(IAST n) {
     //Transpilation of an expression
     IAST current = (IAST) n.value;
-    return inner_transpile(current);
+    return innerTranspile(current);
   }
 
-  private String transpile_equal_to(IAST n){
-    return inner_transpile(n.left) + " == " + inner_transpile(n.middle);
+  private String transpileEqualTo(IAST n) {
+    return innerTranspile(n.left) + " == " + innerTranspile(n.middle);
   }
 
-  private String transpile_not_equal_to(IAST n){
-    return inner_transpile(n.left) + " != " + inner_transpile(n.middle);
+  private String transpileNotEqualTo(IAST n) {
+    return innerTranspile(n.left) + " != " + innerTranspile(n.middle);
   }
 
-  private String transpile_greater_than(IAST n){
-    return inner_transpile(n.left) + " > " + inner_transpile(n.middle);
+  private String transpileGreaterThan(IAST n) {
+    return innerTranspile(n.left) + " > " + innerTranspile(n.middle);
   }
 
-  private String transpile_greater_than_or_equal(IAST n){
-    return inner_transpile(n.left) + " >= " + inner_transpile(n.middle);
+  private String transpileGreaterThanOrEqual(IAST n) {
+    return innerTranspile(n.left) + " >= " + innerTranspile(n.middle);
   }
 
-  private String transpile_less_than(IAST n){
-    return inner_transpile(n.left) + " < " + inner_transpile(n.middle);
+  private String transpileLessThan(IAST n) {
+    return innerTranspile(n.left) + " < " + innerTranspile(n.middle);
   }
 
-  private String transpile_less_than_or_equal(IAST n){
-    return inner_transpile(n.left) + " <= " + inner_transpile(n.middle);
+  private String transpileLessThanOrEqual(IAST n) {
+    return innerTranspile(n.left) + " <= " + innerTranspile(n.middle);
   }
 
-  private String transpile_modulo(IAST n){
-    return inner_transpile(n.left) + " % " + inner_transpile(n.next);
+  private String transpileModulo(IAST n) {
+    return innerTranspile(n.left) + " % " + innerTranspile(n.next);
   }
 
-  private String transpile_addition(IAST n){
-    return inner_transpile(n.left) + " + " + inner_transpile(n.next);
+  private String transpileAddition(IAST n) {
+    return innerTranspile(n.left) + " + " + innerTranspile(n.next);
   }
 
-  private String transpile_subtraction(IAST n){
-    return inner_transpile(n.left) + " - " + inner_transpile(n.next);
+  private String transpileSubtraction(IAST n) {
+    return innerTranspile(n.left) + " - " + innerTranspile(n.next);
   }
 
-  private String transpile_multiplication(IAST n){
-    return inner_transpile(n.left) + " * " + inner_transpile(n.next);
+  private String transpileMultiplication(IAST n) {
+    return innerTranspile(n.left) + " * " + innerTranspile(n.next);
   }
 
-  private String transpile_division(IAST n){
-    return inner_transpile(n.left) + " / " + inner_transpile(n.next);
+  private String transpileDivision(IAST n) {
+    return innerTranspile(n.left) + " / " + innerTranspile(n.next);
   }
 
-  private String transpile_and(IAST n){
-    return inner_transpile(n.left) + " and " + inner_transpile(n.next);
+  private String transpileAnd(IAST n) {
+    return innerTranspile(n.left) + " and " + innerTranspile(n.next);
   }
 
-  private String transpile_or(IAST n){
-    return inner_transpile(n.left) + " or " + inner_transpile(n.next);
+  private String transpileOr(IAST n) {
+    return innerTranspile(n.left) + " or " + innerTranspile(n.next);
   }
 
-  private String transpile_for_to(IAST n){
-    StringBuilder output = new StringBuilder("for " + inner_transpile(n.middle.left.middle) + " in range(" + inner_transpile((IAST) n.middle.left.value) + ", " + inner_transpile((IAST) ((IAST) n.value).value) + "):" + System.lineSeparator());
+  private String transpileForTo(IAST n) {
+    StringBuilder output = new StringBuilder("for " + innerTranspile(n.middle.left.middle) + " in range(" + innerTranspile((IAST) n.middle.left.value) + ", " + innerTranspile((IAST) ((IAST) n.value).value) + "):" + System.lineSeparator());
 
     indentation++;
 
     IAST current = n.left.next;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
@@ -526,20 +535,20 @@ public class PythonTranspiler {
     return output.toString();
   }
 
-  private String transpile_for_each(IAST n){
+  private String transpileForEach(IAST n) {
     String mid;
-    if(n.left.middle.type == YASSByteCodes.VAR){
+    if (n.left.middle.type == YASSByteCodes.VAR) {
       mid = n.left.middle.value.toString().replace("$", "");
-    } else{
-      mid = inner_transpile(n.left.middle);
+    } else {
+      mid = innerTranspile(n.left.middle);
     }
-    StringBuilder output = new StringBuilder("for " + mid + " in " + inner_transpile(n.left.left)  + ":" + System.lineSeparator());
+    StringBuilder output = new StringBuilder("for " + mid + " in " + innerTranspile(n.left.left) + ":" + System.lineSeparator());
 
     indentation++;
 
     IAST current = n.middle;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
@@ -549,19 +558,19 @@ public class PythonTranspiler {
     return output.toString();
   }
 
-  private String transpile_for(IAST n){
+  private String transpileFor(IAST n) {
     String steps = "";
     if (n.middle.value instanceof String) {
       // Increasing the number of steps
       steps = ", " + n.middle.value;
     }
-    StringBuilder output = new StringBuilder("for " + inner_transpile(n.middle.left.middle) + " in range(" + inner_transpile((IAST) n.middle.left.value) + ", " + inner_transpile(((IAST) ((IAST) n.value).value).middle) + steps + "):" + System.lineSeparator());
+    StringBuilder output = new StringBuilder("for " + innerTranspile(n.middle.left.middle) + " in range(" + innerTranspile((IAST) n.middle.left.value) + ", " + innerTranspile(((IAST) ((IAST) n.value).value).middle) + steps + "):" + System.lineSeparator());
 
     indentation++;
 
     IAST current = n.left.next;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
@@ -571,22 +580,22 @@ public class PythonTranspiler {
     return output.toString();
   }
 
-  private String transpile_if(IAST n){
-    StringBuilder output = new StringBuilder("if " + inner_transpile((IAST)n.value) + ":" + System.lineSeparator());
+  private String transpileIf(IAST n) {
+    StringBuilder output = new StringBuilder("if " + innerTranspile((IAST) n.value) + ":" + System.lineSeparator());
 
     indentation++;
 
     IAST current = n.left;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
     indentation--;
 
     //It could be else or else if
-    if(n.middle != null){
-      if(n.middle.type != YASSByteCodes.ELSEIF){
+    if (n.middle != null) {
+      if (n.middle.type != YASSByteCodes.ELSEIF) {
 
         //We need to ensure that the world else is also indented
         output.append(addIndentation()).append("else:").append(System.lineSeparator());
@@ -594,8 +603,8 @@ public class PythonTranspiler {
         indentation++;
 
         current = n.middle;
-        while(current != null){
-          output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+        while (current != null) {
+          output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
           current = current.next;
         }
 
@@ -607,14 +616,14 @@ public class PythonTranspiler {
     return output.toString();
   }
 
-  private String transpile_while(IAST n){
-    StringBuilder output = new StringBuilder("while " + inner_transpile((IAST)n.value) + ":" + System.lineSeparator());
+  private String transpileWhile(IAST n) {
+    StringBuilder output = new StringBuilder("while " + innerTranspile((IAST) n.value) + ":" + System.lineSeparator());
 
     indentation++;
 
     IAST current = n.left;
-    while(current != null){
-      output.append(addIndentation()).append(inner_transpile(current)).append(System.lineSeparator());
+    while (current != null) {
+      output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 

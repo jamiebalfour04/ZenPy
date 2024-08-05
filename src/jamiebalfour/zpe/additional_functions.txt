@@ -12,7 +12,8 @@ def map_get_keys(m):
   return m.keys()
 --
 def throw_error(msg):
-  raise Exception(msg)
+  #raise Exception(msg)
+  print(msg)
 --
 def list_add_element(l, e):
   l.append(e)
@@ -24,3 +25,16 @@ def list_remove_element(l, e):
 --
 def random_number(max, min):
   random.randint(min, max)
+--
+def list_set_at_index(l, v, i):
+  diff = i - len(l)
+  if i > 0:
+    for i in range(0, diff + 1):
+      l.append(None)
+  l[len(l) - 1] = v
+--
+def typeOf(e):
+  if isinstance(e, dict):
+    return "MAP"
+  else
+    return type(e)

@@ -24,17 +24,20 @@ def list_remove_element(l, e):
   return l
 --
 def random_number(max, min):
-  random.randint(min, max)
+  return random.randint(min, max)
 --
-def list_set_at_index(l, v, i):
+def list_set_at_index(l, i, v):
   diff = i - len(l)
-  if i > 0:
+  if diff > 0:
     for i in range(0, diff + 1):
       l.append(None)
-  l[len(l) - 1] = v
+    l[len(l) - 1] = v
+  l[i] = v
+  return l
 --
 def typeOf(e):
   if isinstance(e, dict):
     return "MAP"
-  else
+  else:
     return type(e)
+--

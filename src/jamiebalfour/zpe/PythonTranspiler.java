@@ -31,6 +31,8 @@ public class PythonTranspiler {
     yassToPythonFunctionMapping.put("list_get_length", "len");
     yassToPythonFunctionMapping.put("time", "time.time");
     yassToPythonFunctionMapping.put("map_create_ordered", "");
+    yassToPythonFunctionMapping.put("character_to_integer", "ord");
+    yassToPythonFunctionMapping.put("integer_to_character", "chr");
 
 
     pythonImports.put("floor", "math");
@@ -177,6 +179,9 @@ public class PythonTranspiler {
       case YASSByteCodes.MODULO: {
         return transpileModulo(n);
       }
+      case YASSByteCodes.CIRCUMFLEX: {
+        return transpileCircumflex(n);
+      }
       case YASSByteCodes.PLUS: {
         return transpileAddition(n);
       }
@@ -254,7 +259,11 @@ public class PythonTranspiler {
   private String generateParameters(IAST n) {
     StringBuilder output = new StringBuilder();
     IAST current = n;
+
     while (current != null) {
+      if(current.type == YASSByteCodes.INFINITE_PARAMETERS){
+        output.append("*arg");
+      }
       output.append(innerTranspile(current));
       current = current.next;
       if (current != null) {
@@ -299,8 +308,13 @@ public class PythonTranspiler {
     //Transpilation of a variable
 
     String id = n.id;
+
+    if(n.id.equals(argsReplacement)){
+      id = "arg";
+    }
+
     if (id.startsWith("$")) {
-      id= id.substring(1);
+      id = id.substring(1);
     }
 
     id = checkId(id);
@@ -313,7 +327,7 @@ public class PythonTranspiler {
 
     if (((IAST) n.value).id.equals("put")) {
       usedFunctions.add("_put");
-      return "_put(" + innerTranspile(n.left) + ", " + n.left + ", " + generateParameters((IAST) ((IAST) n.value).value) + ")";
+      return "_put(" + innerTranspile(n.left) + ", " + generateParameters((IAST) ((IAST) n.value).value) + ")";
     } else if (((IAST) n.value).id.equals("length")) {
       return "len(" + innerTranspile(n.left) + ")";
     } else {
@@ -378,7 +392,20 @@ public class PythonTranspiler {
     return output.toString();
   }
 
+  String argsReplacement = null;
   private String transpileFunction(IAST n) {
+
+    IAST current = (IAST) n.value;
+
+    //Search for any infinite params and tell the transpiler to sort them later
+    while (current != null) {
+      if(current.type == YASSByteCodes.INFINITE_PARAMETERS){
+        argsReplacement = current.id;
+        current.id = "*arg";
+      }
+      current = current.next;
+    }
+
     //Transpilation of a function
     String params = generateParameters((IAST) n.value);
     //Stupid Python
@@ -408,13 +435,14 @@ public class PythonTranspiler {
     StringBuilder output = new StringBuilder("def " + id + "(" + params + ")" + ":" + System.lineSeparator());
     indentation++;
 
-    IAST current = n.left;
+    current = n.left;
     while (current != null) {
       output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
       current = current.next;
     }
 
     indentation--;
+    argsReplacement = null;
 
     return output.toString();
   }
@@ -492,6 +520,10 @@ public class PythonTranspiler {
 
   private String transpileModulo(IAST n) {
     return innerTranspile(n.left) + " % " + innerTranspile(n.next);
+  }
+
+  private String transpileCircumflex(IAST n) {
+    return "pow (" + innerTranspile(n.left) + ", " + innerTranspile(n.next) + ")";
   }
 
   private String transpileAddition(IAST n) {

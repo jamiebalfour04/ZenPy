@@ -1,6 +1,8 @@
-def _put(i, e, v):
+def _put(i, e, v = None):
   if type(i) == type({}):
     i[e] = v
+  elif type(i) == type([]):
+    i.append(e)
 --
 def list_swap_elements(l, a, b):
   tmp = l[a]
@@ -40,4 +42,51 @@ def typeOf(e):
     return "MAP"
   else:
     return type(e)
+--
+def list_slice(l, offset, length=-1):
+  if length == -1:
+    return l[offset:]
+  else:
+    return l[offset:length]
+--
+def map_contains(m, e):
+  if m is None or e is None or type(m) != type({}):
+    return False
+  return e in m
+--
+def string_get_length(s):
+  return len(str(s))
+--
+def value(o):
+  if isinstance(o, int):
+    return int(o)
+  elif isinstance(o, float):
+    return float(o)
+  elif isinstance(o, str):
+    if str(o).isnumeric():
+      if str(o).find(".") > -1:
+        return float(o)
+      else:
+        return int(o)
+  else:
+    return 0
+--
+def string_get_substring(s, start, length):
+  x = str(s)
+  return x[start:length]
+--
+def string_to_lowercase(s):
+  return s.lower()
+--
+def string_to_uppercase(s):
+  return s.upper()
+--
+def string_contains(s, c):
+  return s.find(c) > -1
+--
+def square_root(n):
+  return math.sqrt(n)
+--
+def string_split(s, d):
+  return s.split(d)
 --

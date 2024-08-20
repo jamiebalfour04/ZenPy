@@ -20,6 +20,7 @@ public class PythonTranspiler {
   ArrayList<String> imports = new ArrayList<>();
   ArrayList<String> usedFunctions = new ArrayList<>();
   ArrayList<String> addedFunctions = new ArrayList<>();
+  ArrayList<String> builtInFunctions = new ArrayList<>();
 
   public String Transpile(IAST code, String s) {
 
@@ -29,7 +30,7 @@ public class PythonTranspiler {
     yassToPythonFunctionMapping.put("floor", "math.floor");
     yassToPythonFunctionMapping.put("factorial", "math.factorial");
     yassToPythonFunctionMapping.put("list_get_length", "len");
-    yassToPythonFunctionMapping.put("time", "time.time");
+    yassToPythonFunctionMapping.put("time", "millitime");
     yassToPythonFunctionMapping.put("map_create_ordered", "");
     yassToPythonFunctionMapping.put("character_to_integer", "ord");
     yassToPythonFunctionMapping.put("integer_to_character", "chr");
@@ -38,7 +39,15 @@ public class PythonTranspiler {
     pythonImports.put("floor", "math");
     pythonImports.put("ceiling", "math");
     pythonImports.put("random_number", "random");
-    pythonImports.put("time", "time");
+    pythonImports.put("time", "datetime");
+
+    for (String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
+      fun = fun.trim();
+      String funcName;
+      String[] lines = fun.split(System.lineSeparator());
+      funcName = lines[0];
+      builtInFunctions.add(funcName);
+    }
 
 
     StringBuilder output = new StringBuilder();
@@ -59,17 +68,26 @@ public class PythonTranspiler {
     StringBuilder additionalFuncs = new StringBuilder();
 
     for (String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
-      StringBuilder funcName = new StringBuilder();
-      if (!fun.isEmpty() && fun.charAt(0) == '\n') {
+      fun = fun.trim();
+      String funcName;
+      String[] lines = fun.split(System.lineSeparator());
+      funcName = lines[0];
+
+      StringBuilder funBuilder = new StringBuilder();
+      for(int i = 1; i < lines.length; i++){
+        funBuilder.append(lines[i]).append(System.lineSeparator());
+      }
+
+      /*if (!fun.isEmpty() && fun.charAt(0) == '\n') {
         fun = fun.substring(1);
       }
       int i = 4;
       while (i < fun.length() && fun.charAt(i) != ' ' && fun.charAt(i) != '(') {
         funcName.append(fun.charAt(i));
         i++;
-      }
-      if (usedFunctions.contains(funcName.toString()) && !(addedFunctions.contains(funcName.toString()))) {
-        additionalFuncs.append(fun);
+      }*/
+      if (usedFunctions.contains(funcName) && !(addedFunctions.contains(funcName))) {
+        additionalFuncs.append(funBuilder);
       }
     }
 
@@ -277,9 +295,15 @@ public class PythonTranspiler {
     //Transpilation of a function call or whatever (anything with an identification)
 
     String output = "";
+    String properName = n.id;
+
+    if(n.id.equals("time")){
+      System.out.println("Yes");
+    }
 
     if (yassToPythonFunctionMapping.containsKey(n.id)) {
       output += yassToPythonFunctionMapping.get(n.id);
+      properName = yassToPythonFunctionMapping.get(n.id);
     } else {
       output += n.id;
     }
@@ -288,8 +312,8 @@ public class PythonTranspiler {
       addImport(pythonImports.get(n.id));
     }
 
-    if (ZPEKit.internalFunctionExists(n.id)) {
-      usedFunctions.add(n.id);
+    if (ZPEKit.internalFunctionExists(properName) || builtInFunctions.contains(properName)) {
+      usedFunctions.add(properName);
     }
 
     output += "(" + generateParameters((IAST) n.value) + ")";

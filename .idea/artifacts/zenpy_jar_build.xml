@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="zenpy.jar build">
+    <output-path>$PROJECT_DIR$/build/</output-path>
+    <root id="archive" name="zenpy.jar">
+      <element id="module-output" name="ZenPy" />
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>

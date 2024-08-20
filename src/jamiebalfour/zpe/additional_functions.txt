@@ -1,33 +1,41 @@
+_put
 def _put(i, e, v = None):
   if type(i) == type({}):
     i[e] = v
   elif type(i) == type([]):
     i.append(e)
 --
+list_swap_elements
 def list_swap_elements(l, a, b):
   tmp = l[a]
   l[a] = l[b]
   l[b] = tmp
   return l
 --
+map_get_keys
 def map_get_keys(m):
   return m.keys()
 --
+throw_error
 def throw_error(msg):
   #raise Exception(msg)
   print(msg)
 --
+list_add_element
 def list_add_element(l, e):
   l.append(e)
   return l
 --
+list_remove_element
 def list_remove_element(l, e):
   l.pop(e)
   return l
 --
+random_number
 def random_number(max, min):
   return random.randint(min, max)
 --
+list_set_at_index
 def list_set_at_index(l, i, v):
   diff = i - len(l)
   if diff > 0:
@@ -37,26 +45,31 @@ def list_set_at_index(l, i, v):
   l[i] = v
   return l
 --
+typeOf
 def typeOf(e):
   if isinstance(e, dict):
     return "MAP"
   else:
     return type(e)
 --
+list_slice
 def list_slice(l, offset, length=-1):
   if length == -1:
     return l[offset:]
   else:
     return l[offset:length]
 --
+map_contains
 def map_contains(m, e):
   if m is None or e is None or type(m) != type({}):
     return False
   return e in m
 --
+string_get_length
 def string_get_length(s):
   return len(str(s))
 --
+value
 def value(o):
   if isinstance(o, int):
     return int(o)
@@ -71,22 +84,33 @@ def value(o):
   else:
     return 0
 --
+string_get_substring
 def string_get_substring(s, start, length):
   x = str(s)
   return x[start:length]
 --
+string_to_lowercase
 def string_to_lowercase(s):
   return s.lower()
 --
+string_to_uppercase
 def string_to_uppercase(s):
   return s.upper()
 --
+string_contains
 def string_contains(s, c):
   return s.find(c) > -1
 --
+square_root
 def square_root(n):
   return math.sqrt(n)
 --
+string_split
 def string_split(s, d):
   return s.split(d)
+--
+millitime
+def millitime():
+  dt = datetime.datetime.now()
+  return dt.microsecond / 1000
 --

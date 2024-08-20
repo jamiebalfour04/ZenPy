@@ -297,10 +297,6 @@ public class PythonTranspiler {
     String output = "";
     String properName = n.id;
 
-    if(n.id.equals("time")){
-      System.out.println("Yes");
-    }
-
     if (yassToPythonFunctionMapping.containsKey(n.id)) {
       output += yassToPythonFunctionMapping.get(n.id);
       properName = yassToPythonFunctionMapping.get(n.id);

@@ -26,7 +26,6 @@ public class PythonTranspiler {
 
 
     yassToPythonFunctionMapping.put("std_in", "print");
-    yassToPythonFunctionMapping.put("auto_input", "input");
     yassToPythonFunctionMapping.put("floor", "math.floor");
     yassToPythonFunctionMapping.put("factorial", "math.factorial");
     yassToPythonFunctionMapping.put("list_get_length", "len");
@@ -41,13 +40,18 @@ public class PythonTranspiler {
     pythonImports.put("random_number", "random");
     pythonImports.put("time", "datetime");
 
-    for (String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
-      fun = fun.trim();
-      String funcName;
-      String[] lines = fun.split(System.lineSeparator());
-      funcName = lines[0];
-      builtInFunctions.add(funcName);
+    try{
+      for (String fun : HelperFunctions.getResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
+        fun = fun.trim();
+        String funcName;
+        String[] lines = fun.split(System.lineSeparator());
+        funcName = lines[0];
+        builtInFunctions.add(funcName);
+      }
+    } catch(Exception e){
+      //Ignore
     }
+
 
 
     StringBuilder output = new StringBuilder();
@@ -67,16 +71,17 @@ public class PythonTranspiler {
 
     StringBuilder additionalFuncs = new StringBuilder();
 
-    for (String fun : HelperFunctions.GetResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
-      fun = fun.trim();
-      String funcName;
-      String[] lines = fun.split(System.lineSeparator());
-      funcName = lines[0];
+    try{
+      for (String fun : HelperFunctions.getResource("/jamiebalfour/zpe/additional_functions.txt", this.getClass()).split("--")) {
+        fun = fun.trim();
+        String funcName;
+        String[] lines = fun.split(System.lineSeparator());
+        funcName = lines[0];
 
-      StringBuilder funBuilder = new StringBuilder();
-      for(int i = 1; i < lines.length; i++){
-        funBuilder.append(lines[i]).append(System.lineSeparator());
-      }
+        StringBuilder funBuilder = new StringBuilder();
+        for(int i = 1; i < lines.length; i++){
+          funBuilder.append(lines[i]).append(System.lineSeparator());
+        }
 
       /*if (!fun.isEmpty() && fun.charAt(0) == '\n') {
         fun = fun.substring(1);
@@ -86,14 +91,22 @@ public class PythonTranspiler {
         funcName.append(fun.charAt(i));
         i++;
       }*/
-      if (usedFunctions.contains(funcName) && !(addedFunctions.contains(funcName))) {
-        additionalFuncs.append(funBuilder);
+        if (usedFunctions.contains(funcName) && !(addedFunctions.contains(funcName))) {
+          additionalFuncs.append(funBuilder);
+        }
       }
+    } catch (Exception e){
+      //Ignore
     }
+
 
     ZPE.Print(System.lineSeparator());
 
-    output.append(System.lineSeparator()).append("main()");
+    if(output.toString().contains("def main")){
+      output.append(System.lineSeparator()).append("main()");
+    }
+
+
 
 
     return importStr.toString() + additionalFuncs + output;

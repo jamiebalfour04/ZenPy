@@ -16,10 +16,10 @@ public class Main {
   private static void test(String input, String output){
 
     try {
-      String s = jamiebalfour.zpe.core.ZPEKit.convertCode(jamiebalfour.HelperFunctions.ReadFileAsString(input), "output", new Transpiler());
+      String s = jamiebalfour.zpe.core.ZPEKit.convertCode(jamiebalfour.HelperFunctions.readFileAsString(input), "output", new Transpiler());
       System.out.println(s);
       jamiebalfour.HelperFunctions.WriteFile(output, s, false);
-      System.out.println(jamiebalfour.HelperFunctions.ShellExec("python3 " + output));
+      System.out.println(jamiebalfour.HelperFunctions.shellExec("python3 " + output));
     } catch (ZPEException e) {
       throw new RuntimeException(e);
     } catch (IOException e) {

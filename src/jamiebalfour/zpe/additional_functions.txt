@@ -114,3 +114,13 @@ def millitime():
   dt = datetime.datetime.now()
   return dt.microsecond / 1000
 --
+auto_input
+def auto_input():
+  v = input()
+  if v.isnumeric():
+    if v.isdecimal():
+      return float(v)
+    else:
+      return int(v)
+  return v
+--

@@ -118,9 +118,9 @@ auto_input
 def auto_input():
   v = input()
   if v.isnumeric():
-    if v.isdecimal():
-      return float(v)
-    else:
-      return int(v)
-  return v
+    return int(v)
+  try:
+    return float(v)
+  except ValueError:
+    return v
 --

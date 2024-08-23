@@ -660,21 +660,40 @@ public class PythonTranspiler {
 
     //It could be else or else if
     if (n.middle != null) {
-      if (n.middle.type != YASSByteCodes.ELSEIF) {
+      IAST currentInner = n.middle;
+      while(currentInner != null){
+        if (currentInner.type == YASSByteCodes.ELSE) {
 
-        //We need to ensure that the world else is also indented
-        output.append(addIndentation()).append("else:").append(System.lineSeparator());
+          //We need to ensure that the world else is also indented
+          output.append(addIndentation()).append("else:").append(System.lineSeparator());
 
-        indentation++;
+          indentation++;
 
-        current = n.middle;
-        while (current != null) {
-          output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
-          current = current.next;
+          current = currentInner;
+          while (current != null) {
+            output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
+            current = current.next;
+          }
+
+          indentation--;
+        } else if(currentInner.type == YASSByteCodes.ELSEIF){
+
+          //We need to ensure that the world else is also indented
+          output.append(addIndentation()).append("elif ").append(innerTranspile((IAST) currentInner.value)).append(":").append(System.lineSeparator());
+
+          indentation++;
+
+          current = currentInner;
+          while (current != null) {
+            output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
+            current = current.next;
+          }
+
+          indentation--;
         }
-
-        indentation--;
+        currentInner = currentInner.next;
       }
+
     }
 
 

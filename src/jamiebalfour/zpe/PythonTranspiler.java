@@ -669,7 +669,7 @@ public class PythonTranspiler {
 
           indentation++;
 
-          current = currentInner;
+          current = currentInner.left;
           while (current != null) {
             output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
             current = current.next;
@@ -683,7 +683,7 @@ public class PythonTranspiler {
 
           indentation++;
 
-          current = currentInner;
+          current = currentInner.left;
           while (current != null) {
             output.append(addIndentation()).append(innerTranspile(current)).append(System.lineSeparator());
             current = current.next;

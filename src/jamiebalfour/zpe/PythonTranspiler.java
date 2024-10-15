@@ -100,7 +100,7 @@ public class PythonTranspiler {
     }
 
 
-    ZPE.Print(System.lineSeparator());
+    ZPE.print(System.lineSeparator());
 
     if(output.toString().contains("def main")){
       output.append(System.lineSeparator()).append("main()");
@@ -150,7 +150,7 @@ public class PythonTranspiler {
       case YASSByteCodes.STRUCTURE: {
         return transpileStructure(n);
       }
-      case YASSByteCodes.OBJECT_POINTER: {
+      case YASSByteCodes.ARROW_OPERATOR: {
         return innerTranspile(n.middle) + "." + innerTranspile((IAST) n.value);
       }
       case YASSByteCodes.TYPE:{

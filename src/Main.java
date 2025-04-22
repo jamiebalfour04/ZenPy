@@ -18,7 +18,7 @@ public class Main {
     try {
       String s = jamiebalfour.zpe.core.ZPEKit.convertCode(jamiebalfour.HelperFunctions.readFileAsString(input), "output", new Transpiler());
       System.out.println(s);
-      jamiebalfour.HelperFunctions.WriteFile(output, s, false);
+      jamiebalfour.HelperFunctions.writeFile(output, s, false);
       System.out.println(jamiebalfour.HelperFunctions.shellExec("python3 " + output));
     } catch (ZPEException e) {
       throw new RuntimeException(e);
